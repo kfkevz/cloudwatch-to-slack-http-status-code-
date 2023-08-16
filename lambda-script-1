@@ -1,0 +1,52 @@
+import urllib3
+import json
+
+http = urllib3.PoolManager()
+
+def lambda_handler(event, context):
+    url = "https://hooks.slack.com/services/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"  # Replace with your actual webhook URL
+
+    message = event['Records'][0]['Sns']['Message']
+    channel = "cloudwatch"  # Replace with desired channel name
+    username = "cloudwatch_alarms"
+    icon_emoji = ":exclamation:"  # Red exclamation mark emoji
+
+    # Parse the original JSON message
+    alert_data = json.loads(message)
+    alarm_name = alert_data['AlarmName']
+    state_change_time = alert_data['StateChangeTime']
+    old_state = alert_data['OldStateValue']
+    new_state = alert_data['NewStateValue']
+    metric_name = alert_data['Trigger']['MetricName']
+    threshold = alert_data['Trigger']['Threshold']
+
+    # Create the formatted message
+    formatted_message = (
+        f":rotating_light: *AWS CloudWatch Notification*\n\n"
+        f"*Alarm Name*: {alarm_name}\n"
+        f"*Old State*: {old_state}\n"
+        f"*Alarm Details (CPU Utilization)*: {metric_name} exceeded {threshold}%\n"
+        f"*State Change Time*: {state_change_time}\n"
+        f"*New State*: {new_state}"
+    )
+
+    msg_payload = {
+        "channel": channel,
+        "username": username,
+        "text": formatted_message,
+        "icon_emoji": icon_emoji
+    }
+
+    encoded_payload = json.dumps(msg_payload).encode('utf-8')
+    response = http.request('POST', url, body=encoded_payload)
+
+    response_info = {
+        "message": message,
+        "status_code": response.status,
+        "response": response.data.decode('utf-8')
+    }
+
+    print(response_info)
+
+# Note: Replace placeholders like YOUR_WEBHOOK_URL, YOUR_CHANNEL_NAME, and YOUR_ICON_EMOJI with appropriate values.
+
