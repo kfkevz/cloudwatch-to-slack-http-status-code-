@@ -1,0 +1,38 @@
+import urllib3 
+import json
+
+http = urllib3.PoolManager() 
+
+def get_cpu_utilization(event):
+    # Extract CPU utilization from the SNS message
+    sns_message = json.loads(event['Records'][0]['Sns']['Message'])
+    return sns_message['Trigger']['Threshold']
+
+def lambda_handler(event, context): 
+    url = "https://hooks.slack.com/services/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"
+    
+    cpu_utilization = get_cpu_utilization(event)
+    
+    msg = {
+        "channel": "cloudwatch",
+        "username": "cloudwatch_alarms",
+        "text": event['Records'][0]['Sns']['Message'],
+        "icon_emoji": "",
+        "attachments": [
+            {
+                "title": "Current CPU Utilization",
+                "text": f"{cpu_utilization}%",
+                "color": "#36a64f"
+            }
+        ]
+    }
+    
+    encoded_msg = json.dumps(msg).encode('utf-8')
+    resp = http.request('POST', url, body=encoded_msg)
+    
+    print({
+        "message": event['Records'][0]['Sns']['Message'], 
+        "status_code": resp.status, 
+        "response": resp.data
+    })
+
