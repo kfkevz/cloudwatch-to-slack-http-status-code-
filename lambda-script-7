@@ -1,0 +1,52 @@
+import urllib3
+import json
+
+http = urllib3.PoolManager()
+
+def lambda_handler(event, context):
+    url = "https://hooks.slack.com/services/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"
+
+    sns_message = json.loads(event['Records'][0]['Sns']['Message'])
+    alarm_name = sns_message['AlarmName']
+    alarm_details = sns_message.get('AlarmDescription', 'No details')
+    old_state = sns_message['OldStateValue']
+    new_state = sns_message['NewStateValue']
+    state_change_time = sns_message['StateChangeTime']
+    
+    # Determine color based on new state
+    if new_state == 'ALARM':
+        color = '#FF0000'  # Red for ALARM state
+    elif new_state == 'OK':
+        color = '#36a64f'  # Green for OK state
+    else:
+        color = '#FFA500'  # Orange for other states
+
+    msg = {
+        "channel": "cloudwatch",
+        "username": "cloudwatch_alarms",
+        "text": "",
+        "icon_emoji": "",
+        "attachments": [
+            {
+                "title": ":rotating_light: AWS CloudWatch Notification",
+                "text": (
+                    f"*Alarm Name:* {alarm_name}\n"
+                    f"*Alarm Details:* {alarm_details}\n"
+                    f"*Old State:* {old_state}\n"
+                    f"*New State:* {new_state}\n"
+                    f"*State Change Time:* {state_change_time}"
+                ),
+                "color": color
+            }
+        ]
+    }
+
+    encoded_msg = json.dumps(msg).encode('utf-8')
+    resp = http.request('POST', url, body=encoded_msg)
+
+    print({
+        "message": event['Records'][0]['Sns']['Message'],
+        "status_code": resp.status,
+        "response": resp.data
+    })
+
