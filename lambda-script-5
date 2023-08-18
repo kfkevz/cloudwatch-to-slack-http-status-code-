@@ -12,10 +12,14 @@ def lambda_handler(event, context):
     old_state = sns_message['OldStateValue']
     new_state = sns_message['NewStateValue']
     state_change_time = sns_message['StateChangeTime']
-
-    color = "#36a64f"  # Default to green
+    
+    # Determine color based on new state
     if new_state == 'ALARM':
-        color = "#ff0000"  # Change to red for ALARM state
+        color = '#FF0000'  # Red for ALARM state
+    elif new_state == 'OK':
+        color = '#36a64f'  # Green for OK state
+    else:
+        color = '#FFA500'  # Orange for other states
 
     msg = {
         "channel": "cloudwatch",
@@ -25,17 +29,11 @@ def lambda_handler(event, context):
         "attachments": [
             {
                 "title": f"Alarm Name: {alarm_name}",
-                "color": color
-            },
-            {
-                "title": "Alarm Details",
                 "text": f"{alarm_details}\n\n"
-                
                         f"Old State: {old_state}\n"
-                        
                         f"New State: {new_state}\n"
-                        
-                        f"State Change Time: {state_change_time}"
+                        f"State Change Time: {state_change_time}",
+                "color": color
             }
         ]
     }
